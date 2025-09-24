@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Relative Coordinate Game</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+    }
+    canvas {
+      border: 2px solid #333;
+      background-color: #fff;
+      margin: 20px;
+    }
+    #info {
+      font-size: 18px;
+      margin: 10px;
+    }
+    #score {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: white;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Relative Coordinate Game</h1>
+  <canvas id="gameCanvas" width="500" height="500"></canvas>
+  <div id="info">Click the Relative location of: <span id="target"></span></div>
+  <div id="score">Score: 0</div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const targetEl = document.getElementById('target');
+
+    let score = 0;
+    let current = {x: 0, y: 0};
+    let target = {x: 0, y: 0};
+    let prevX = 0;
+    let prevY = 0;
+    const max = 10;
+    const range = 10;
+    const step = canvas.width / (2 * range);
+    const solvedPoints = [];
+
+    function drawGrid() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "#ddd";
+
+      for (let i = 0; i <= 2*range; i++) {
+        let pos = i * step;
+        ctx.beginPath();
+        ctx.moveTo(pos, 0);
+        ctx.lineTo(pos, canvas.height);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, pos);
+        ctx.lineTo(canvas.width, pos);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = "#333";
+      ctx.beginPath();
+      ctx.moveTo(canvas.width/2, 0);
+      ctx.lineTo(canvas.width/2, canvas.height);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height/2);
+      ctx.lineTo(canvas.width, canvas.height/2);
+      ctx.stroke();
+
+      ctx.fillStyle = "#000";
+      ctx.font = "10px Arial";
+      for (let i = -range; i <= range; i++) {
+        if (i % 5 === 0 && i !== 0) {
+          let x = canvas.width/2 + i*step;
+          ctx.beginPath();
+          ctx.moveTo(x, canvas.height/2 - 5);
+          ctx.lineTo(x, canvas.height/2 + 5);
+          ctx.stroke();
+          ctx.fillText(i, x-7, canvas.height/2 + 15);
+
+          let y = canvas.height/2 - i*step;
+          ctx.beginPath();
+          ctx.moveTo(canvas.width/2 - 5, y);
+          ctx.lineTo(canvas.width/2 + 5, y);
+          ctx.stroke();
+          ctx.fillText(i, canvas.width/2 + 7, y+3);
+        }
+      }
+
+      // Redraw solved points as purple
+      for (let p of solvedPoints) {
+        drawPoint(p.x, p.y, 'purple');
+      }
+    }
+    function rng(M) {
+      const minCeiled = Math.ceil(-M);
+      const maxFloored = Math.floor(M);
+      return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled);
+   }
+   
+    function newTarget() {
+      let dx, dy;
+      if (true ) {
+        
+        dx = rng(max)+prevX;
+        dy = rng(max)+prevY;
+        
+        
+        if (dx > max || dx < -max || dy > max || dy < -max) {
+          while (dx > max || dx < -max || dy > max || dy < -max) {
+            dx= rng(max)+prevX;
+            dy= rng(max)+prevY;
+          }
+        }
+        target.x = dx;
+        target.y = dy;
+        
+
+      } 
+      targetEl.textContent = `${dx >= -20 ? ""+(dx-prevX) : (dx-prevX)}, ${dy >= -20 ? ""+(dy-prevY) : (dy-prevY)}`;
+      prevX = dx;
+      prevY = dy;
+    }
+
+    function canvasToCoords(x, y) {
+      let coordX = Math.round((x - canvas.width/2) / step);
+      let coordY = Math.round((canvas.height/2 - y) / step);
+      return {x: coordX, y: coordY};
+    }
+
+    function drawPoint(x, y, color) {
+      ctx.beginPath();
+      ctx.arc(canvas.width/2 + x*step, canvas.height/2 - y*step, 5, 0, 2*Math.PI);
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+      const coords = canvasToCoords(clickX, clickY);
+
+      if (coords.x === target.x && coords.y === target.y) {
+        solvedPoints.push({x: coords.x, y: coords.y});
+        score += 10;
+        current = target;
+        newTarget();
+        drawGrid();
+      } else {
+        drawPoint(coords.x, coords.y, 'blue');
+        drawPoint(target.x, target.y, 'red');
+        score -= 5;
+      }
+
+      scoreEl.textContent = `Score: ${score}`;
+    });
+
+    function newRound() {
+      drawGrid();
+      newTarget();
+    }
+
+    newRound();
+  </script>
+</body>
+</html>
